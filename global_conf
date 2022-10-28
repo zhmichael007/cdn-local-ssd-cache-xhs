@@ -1,0 +1,7 @@
+#the configuraiton for the proxy server
+#google-fluentd control configuraion, on or off, if not on, consider it as off
+stackdriver_logging=on
+#the nginx.conf file of local ssd proxy, default value: nginx_localssd.conf
+nginx_conf_localssd=nginx_localssd_20221027.conf
+#the nginx.conf file of bypass proxy, default value: nginx_bypass.conf
+nginx_conf_bypass=nginx_bypass.conf
