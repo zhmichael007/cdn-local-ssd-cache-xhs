@@ -27,14 +27,22 @@ update_nginx_conf() {
             check_valid=$(nginx -t 2>&1 | grep "successful")
             if [ -n "$check_valid" ]; then
                 echo "file $nginx_conf_localssd valid, reload nginx"
+                is_running=$(service nginx status | grep running)
+                if [ "$is_running" = "" ]; then
+                    echo "start nginx service because it is not running"
+                    service nginx start
+                fi
                 service nginx reload
                 echo $nginx_conf_localssd >/etc/nginx/current_nginx_conf
+                gcloud logging write nginx-conf $(hostname)": nginx conf file /mnt/gcs/$nginx_conf_localssd reloaded"
             else
                 ln -sf /mnt/gcs/$current_nginx_conf_file /etc/nginx/nginx.conf
                 echo "file $nginx_conf_localssd NOT valid, will NOT reload nginx"
+                gcloud logging write nginx-conf $(hostname)": nginx conf file /mnt/gcs/$nginx_conf_localssd NOT valid by niginx -t check" --severity=ERROR
             fi
         else
             echo "file /mnt/gcs/$nginx_conf_localssd NOT exists, please check key nginx_conf_localssd in /mnt/gcs/global_conf file"
+            gcloud logging write nginx-conf $(hostname)": nginx conf file /mnt/gcs/$nginx_conf_localssd NOT exists" --severity=ERROR
         fi
     else
         echo 'nginx localssd conf file name not changed'
@@ -44,6 +52,12 @@ update_nginx_conf() {
 update_upstream_conf() {
     UPSTREAM_FILE_NAME='/etc/nginx/upstream.conf'
 
+    is_running=$(service nginx status | grep running)
+    if [ "$is_running" = "" ]; then
+        echo "start nginx service because it is not running"
+        service nginx start
+    fi
+    
     echo "check ip address list in instance group"
 
     mig_name=$(curl -s 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/created-by' -H 'Metadata-Flavor: Google')
